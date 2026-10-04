@@ -6,25 +6,59 @@ its own tests against the docstrings in lab2.py, and they are not gentle.
 """
 
 import pytest
+import unittest
 
-from lab2 import ground, load, parse_domain, parse_problem, successors
-
-
-def test_parse_problem_reads_the_lab_file():
-    # Arrange: the input.  Act: call the function.  Assert: what must be true.
-    problem = parse_problem(open("problem.pddl").read())
-    assert problem.objects["cat"] == "item"
-    assert ("hand-empty",) in problem.init
-    assert ("photo-taken", "cat") in problem.goal
+from lab2 import ground, load, parse_domain, parse_problem, successors, tokenize, parse_tree
 
 
-def test_parse_domain():
-    pytest.skip("write me")
+
+class TestLab2(unittest.TestCase):
+    def test_parse_problem_reads_the_lab_file(self):
+        # Arrange: the input.  Act: call the function.  Assert: what must be true.
+        problem = parse_problem(open("problem.pddl").read())
+        assert problem.objects["cat"] == "item"
+        assert ("hand-empty",) in problem.init
+        assert ("photo-taken", "cat") in problem.goal
 
 
-def test_ground():
-    pytest.skip("write me")
+    def test_run_function(self):
+        tokens = tokenize("(:action suck :parameters (?c - cell) :effect (and (clean ?c) (not (dirty ?c))))")
+        print(tokens)
+
+        tree = parse_tree(tokens)
+        print(tree)
 
 
-def test_successors():
-    pytest.skip("write me")
+    def test_parse_problem_vacuum_tiny(self):
+        problem = parse_problem(open("vacuum-tiny.pddl").read())
+        self.assertEqual(problem.name, 'tiny')
+        self.assertEqual(problem.domain, 'vacuum')
+        self.assertListEqual(list(problem.objects.keys()), [
+            'c11', 'c12', 'c13', 'c21', 'c22', 'c23'
+        ])
+        self.assertTrue(all(v == 'cell' for v in problem.objects.values()))
+        self.assertSetEqual(
+            problem.init,
+        frozenset({('adjacent', 'c11', 'c12'), ('adjacent', 'c11', 'c21'), ('adjacent', 'c12', 'c11'),
+                   ('adjacent', 'c12', 'c13'), ('adjacent', 'c12', 'c22'), ('adjacent', 'c13', 'c12'),
+                   ('adjacent', 'c13', 'c23'), ('adjacent', 'c21', 'c11'), ('adjacent', 'c21', 'c22'),
+                   ('adjacent', 'c22', 'c12'), ('adjacent', 'c22', 'c21'), ('adjacent', 'c22', 'c23'),
+                   ('adjacent', 'c23', 'c13'), ('adjacent', 'c23', 'c22'), ('clean', 'c11'), ('clean', 'c13'),
+                   ('clean', 'c21'), ('clean', 'c22'), ('dirty', 'c12'), ('dirty', 'c23'), ('robot-at', 'c11')})
+        )
+
+    def test_parse_problem_blocks_sussman(self):
+        problem = parse_problem(open("blocks-sussman.pddl").read())
+        print(problem)
+
+
+    def test_parse_domain(self):
+        pytest.skip("write me")
+
+
+    def test_ground(self):
+        pytest.skip("write me")
+
+
+    def test_successors(self):
+        pytest.skip("write me")
