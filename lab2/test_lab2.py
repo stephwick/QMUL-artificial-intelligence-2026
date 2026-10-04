@@ -8,8 +8,7 @@ its own tests against the docstrings in lab2.py, and they are not gentle.
 import pytest
 import unittest
 
-from lab2 import ground, load, parse_domain, parse_problem, successors, tokenize, parse_tree
-
+from lab2 import ground, load, parse_domain, parse_problem, successors, tokenize, parse_tree, Action
 
 
 class TestLab2(unittest.TestCase):
@@ -52,9 +51,31 @@ class TestLab2(unittest.TestCase):
         print(problem)
 
 
-    def test_parse_domain(self):
-        pytest.skip("write me")
+    def test_parse_domain_vacuum_domain(self):
+        domain = parse_domain(open("vacuum-domain.pddl").read())
+        self.assertEqual(domain.name, 'vacuum')
+        self.assertDictEqual(domain.types, {'cell': 'object'})
+        self.assertDictEqual(
+            domain.predicates,
+            {
+                'adjacent': (('?a', 'cell'), ('?b', 'cell')),
+                'clean': (('?c', 'cell'),),
+                'dirty': (('?c', 'cell'),),
+                'robot-at': (('?c', 'cell'),)
+            }
+        )
+        self.assertDictEqual(
+            domain.actions,
+            {'move': Action(name='move', params=(('?from', 'cell'), ('?to', 'cell')),
+                            pre=frozenset({('robot-at', '?from'), ('adjacent', '?from', '?to')}),
+                            add=frozenset({('robot-at', '?to')}), delete=frozenset({('robot-at', '?from')})),
+             'suck': Action(name='suck', params=(('?c', 'cell'),), pre=frozenset({('dirty', '?c'), ('robot-at', '?c')}),
+                            add=frozenset({('clean', '?c')}), delete=frozenset({('dirty', '?c')}))}
+        )
 
+    def test_parse_domain_blocks_domain(self):
+        domain = parse_domain(open("blocks-domain.pddl").read())
+        print(domain)
 
     def test_ground(self):
         pytest.skip("write me")
