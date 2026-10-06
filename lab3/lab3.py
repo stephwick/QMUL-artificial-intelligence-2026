@@ -32,7 +32,7 @@ from collections import deque
 from dataclasses import dataclass, field
 from itertools import count
 
-from lab2 import Action, Problem, goal_reached, load, successors
+from lab2.lab2 import Action, Problem, goal_reached, load, successors   # change to 'from lab2 import' for submission
 
 # GIVEN: do not change.
 COST = {"walk-between-rooms": 3, "stack": 2, "unstack": 2, "slice-object": 2}
@@ -99,8 +99,12 @@ def reconstruct(parent: dict, state) -> list[str]:
     >>> reconstruct(parent, "s2"), reconstruct(parent, "s0")
     (['a', 'b'], [])
     """
-    # TODO
-    raise NotImplementedError
+    plan = []
+    while parent[state] is not None:
+        state, action = parent[state]
+        plan.append(action)
+
+    return plan[::-1]
 
 
 def bfs(problem: Problem, actions: list[Action]) -> Result:
@@ -117,8 +121,27 @@ def bfs(problem: Problem, actions: list[Action]) -> Result:
     >>> len(r.plan), r.plan[0], len(r.expanded)
     (5, 'move(c11, c12)', 13)
     """
-    # TODO
-    raise NotImplementedError
+    start = problem.init
+    if goal_reached(start, problem.goal):
+        return Result([], [], 0, 1)
+
+    parent, frontier = {start: None}, deque([start])    # will start always have None as value?
+    expanded, generated, max_frontier = [], 0, 1
+    while frontier:
+        s = frontier.popleft()
+        expanded.append(s)
+        for name, s2 in successors(s, actions).items():
+            generated += 1
+            if s2 in parent:
+                continue
+            parent[s2] = (s, name)
+
+            if goal_reached(s2, problem.goal):
+                return Result(reconstruct(parent, s2), expanded, generated, max_frontier)
+            frontier.append(s2)
+            max_frontier = max(max_frontier, len(frontier))
+
+    return Result(None, expanded, generated, max_frontier)
 
 
 def dfs(problem: Problem, actions: list[Action], depth_limit: int = 30) -> Result:
@@ -134,8 +157,26 @@ def dfs(problem: Problem, actions: list[Action], depth_limit: int = 30) -> Resul
     >>> r.plan is not None and len(r.plan) <= 30
     True
     """
-    # TODO
-    raise NotImplementedError
+    start = problem.init
+    parent, frontier = {start: None}, [(start, 0)]
+    expanded, generated, max_frontier = [], 0, 1
+    while frontier:
+        s, depth = frontier.pop()
+        expanded.append(s)
+        if goal_reached(s, problem.goal):
+            return Result(reconstruct(parent, s), expanded, generated, max_frontier)
+        if depth >= depth_limit:
+            continue
+
+        for name, s2 in successors(s, actions).items():
+            generated += 1
+            if s2 in parent:
+                continue
+            parent[s2] = (s, name)
+            frontier.append((s2, depth + 1))
+        max_frontier = max(max_frontier, len(frontier))
+
+    return Result(None, expanded, generated, max_frontier)
 
 
 def ucs(problem: Problem, actions: list[Action], cost=action_cost) -> Result:
@@ -152,8 +193,34 @@ def ucs(problem: Problem, actions: list[Action], cost=action_cost) -> Result:
     >>> len(r.plan), r.cost
     (9, 12)
     """
-    # TODO
-    raise NotImplementedError
+    start = problem.init
+    g, parent, closed = {start: 0}, {start: None}, set()   # g => cost for reaching state
+    tie = count()
+    frontier = [(0, next(tie), start)]
+    expanded, generated, max_frontier = [], 0, 1
+
+    while frontier:
+        _, _, s = heapq.heappop(frontier)
+        if s in closed:
+            continue
+
+        closed.add(s)
+        expanded.append(s)
+        if goal_reached(s, problem.goal):
+            return Result(reconstruct(parent, s), expanded, generated, max_frontier)
+
+        for name, s2 in successors(s, actions).items():
+            generated += 1
+            g2 = g[s] + cost(name)
+            if s2 not in g or g2 < g[s2]:
+                g[s2] = g2
+                parent[s2] = (s, name)
+                closed.discard(s2)
+                heapq.heappush(frontier, (g2, next(tie), s2))
+
+        max_frontier = max(max_frontier, len(frontier))
+
+    return Result(None, expanded, generated, max_frontier)
 
 
 if __name__ == "__main__":
