@@ -68,8 +68,7 @@ def goal_count(state: frozenset, goal: frozenset, actions: list[Action]) -> int:
     >>> goal_count(p.init, p.goal, acts)
     3
     """
-    # TODO
-    raise NotImplementedError
+    return len(goal - state)
 
 
 def relaxed_costs(state: frozenset, actions: list[Action], cost=action_cost) -> dict:
@@ -87,8 +86,36 @@ def relaxed_costs(state: frozenset, actions: list[Action], cost=action_cost) -> 
     >>> ("can-cut", "dslr") in c
     False
     """
-    # TODO
-    raise NotImplementedError
+    # all_facts = set()
+    # for a in actions:
+    #     all_facts = all_facts.union(a.pre)
+    #
+    # print(all_facts)
+    # for fact in all_facts:
+    #     problem = Problem(
+    #         name='',
+    #         domain='',
+    #         objects={},
+    #         init=state,
+    #         goal=frozenset(fact)
+    #     )
+    #     result = dfs(problem, actions)
+    #     print(result.generated)
+
+    # use cost as defined in pddl or alternative means of finding cost
+    costs = {f: 0 for f in state}
+    changed = True
+    while changed:
+        changed = False
+        for a in actions:
+            if all(f in costs for f in a.pre):  # can the action change the state?
+                c = cost(a.name) + sum(costs[f] for f in a.pre)
+                for f in a.add:
+                    if c < costs.get(f, float('inf')):
+                        costs[f] = c
+                        changed = True
+
+    return costs
 
 
 def best_first(problem: Problem, actions: list[Action], priority, max_expanded: int = 200_000) -> Result:
@@ -106,8 +133,31 @@ def best_first(problem: Problem, actions: list[Action], priority, max_expanded: 
     >>> best_first(p, acts, lambda g, s: g).cost
     12
     """
-    # TODO
-    raise NotImplementedError
+    start = problem.init
+    g, parent, closed = {start: 0}, {start: None}, set()
+    tie = count()
+    frontier = [(priority(0, start), next(tie), start)]
+    expanded, generated, max_frontier = [], 0, 1
+    while frontier and len(expanded) < max_expanded:
+        _, _, s = heapq.heappop(frontier)
+        if s in closed:
+            continue
+        closed.add(s)
+        expanded.append(s)
+        if goal_reached(s, problem.goal):
+            return Result(reconstruct(parent, s), expanded, generated, max_frontier)
+
+        for name, s2 in successors(s, actions).items():
+            generated += 1
+            g2 = g[s] + action_cost(name)
+            if s2 not in g or g2 < g[s2]:
+                g[s2] = g2
+                parent[s2] = (s, name)
+                closed.discard(s2)
+                heapq.heappush(frontier, (priority(g2, s2), next(tie), s2))
+            max_frontier = max(max_frontier, len(frontier))
+
+    return Result(None, expanded, generated, max_frontier)
 
 
 # =============================================================== GIVEN ======
