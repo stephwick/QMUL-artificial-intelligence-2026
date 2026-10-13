@@ -27,8 +27,8 @@ from __future__ import annotations
 import heapq
 from itertools import count
 
-from lab2 import Action, Problem, goal_reached, load, successors
-from lab3 import Result, action_cost, bfs, dfs, plan_cost, reconstruct, ucs
+from lab2.lab2 import Action, Problem, goal_reached, load, successors
+from lab3.lab3 import Result, action_cost, bfs, dfs, plan_cost, reconstruct, ucs
 
 # =============================================================== YOURS ======
 
@@ -46,7 +46,17 @@ def iterative_deepening(problem: Problem, actions: list[Action], max_depth: int 
     >>> len(r.plan), len(bfs(p, acts).expanded) < len(r.expanded), r.max_frontier <= bfs(p, acts).max_frontier
     (5, True, True)
     """
-    raise NotImplementedError
+    expanded, generated, max_frontier = [], 0, 0
+    for limit in range(max_depth + 1):
+        r = dfs(problem, actions, depth_limit=limit)
+        expanded += r.expanded
+        generated += r.generated
+        max_frontier = max(max_frontier, r.max_frontier)
+
+        if r.plan is not None:
+            return Result(r.plan, expanded, generated, max_frontier)
+
+    return Result(None, expanded, generated, max_frontier)
 
 
 def goal_count(state: frozenset, goal: frozenset, actions: list[Action]) -> int:

@@ -5,7 +5,7 @@ from collections import deque
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from lab2 import goal_reached, successors
+from lab2.lab2 import goal_reached, successors
 
 
 def explore(init, actions, cap=None):
