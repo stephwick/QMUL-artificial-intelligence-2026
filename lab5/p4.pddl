@@ -1,0 +1,12 @@
+(define (problem four-animals)
+  (:domain workshop)
+  (:objects cat dog bird frog - item  knife dslr - tool  lab outdoors - location)
+  (:init
+    (agent-at lab) (hand-empty)
+    (tool-at knife lab) (can-cut knife)
+    (tool-at dslr lab) (can-photo dslr)
+    (at cat lab) (whole cat) (clear cat) (on-surface cat)
+    (at dog lab) (whole dog) (clear dog) (on-surface dog)
+    (at bird lab) (whole bird) (clear bird) (on-surface bird)
+    (at frog lab) (whole frog) (clear frog) (on-surface frog))
+  (:goal (and (photo-taken cat) (photo-taken frog) (cut-into-pieces dog) (at dog outdoors) (on-top bird cat))))
