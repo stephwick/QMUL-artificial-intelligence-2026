@@ -21,9 +21,9 @@ import math
 import random
 import time
 
-from lab2 import Action, Problem, goal_reached, load, successors
-from lab3 import Result, action_cost, plan_cost
-from lab4 import astar, best_first, goal_count, greedy, h_add, relaxed_costs
+from lab2.lab2 import Action, Problem, goal_reached, load, successors
+from lab3.lab3 import Result, action_cost, plan_cost
+from lab4.lab4 import astar, best_first, goal_count, greedy, h_add, relaxed_costs
 
 # =============================================================== GIVEN ======
 
@@ -93,6 +93,26 @@ def prune_plan(problem: Problem, actions: list[Action], plan: list[str]) -> list
     >>> len(padded), len(prune_plan(p, acts, padded))
     (11, 9)
     """
+    by_name = {a.name: a for a in actions}
+    def valid(pl):
+        s = problem.init
+        for name in pl:
+            a = name.get(name)
+            if a is None or not a.pre <= s:
+                return False
+            s = (s - a.delete) | a.add
+        return goal_reached(s, problem.goal)
+    plan = list(plan)
+    improved = True
+    while improved:
+        improved = False
+        singles = [[i] for i in range(len(plan))]
+        # here is something missing
+        for drop in singles:
+            candidate = [a for k, a in enumerate(plan) if k not in drop]
+            if valid(candidate):
+                pass
+
     # TODO
     raise NotImplementedError
 
@@ -107,8 +127,18 @@ def anneal(start, neighbour, score, seconds: float = 5.0, temperature: float = 1
     >>> best
     3
     """
-    # TODO
-    raise NotImplementedError
+    x, sx = start, score(start)
+    t0 = time.perf_counter()
+    while True:
+        frac = (time.perf_counter() - t0) / seconds
+        if frac >= 1:
+            return x
+
+        temp = temperature * (1 - frac) + 1e-9
+        y = neighbour(x)
+        sy = score(y)
+        if sy <= sx or random.random() < math.exp(-(sy - sx) / temp):
+            x, sx = y, sy
 
 
 if __name__ == "__main__":
