@@ -59,8 +59,7 @@ def weighted_astar(problem: Problem, actions: list[Action], h, w: float = 2.0, m
     >>> weighted_astar(p, acts, h_add, 2.0).cost
     15
     """
-    # TODO
-    raise NotImplementedError
+    return best_first(problem, actions, lambda g, s: g + w * h(s, problem.goal, actions), max_expanded)
 
 
 def h_ff(state: frozenset, goal: frozenset, actions: list[Action]) -> float:
@@ -77,8 +76,34 @@ def h_ff(state: frozenset, goal: frozenset, actions: list[Action]) -> float:
     >>> h_ff(p.init, p.goal, acts), h_add(p.init, p.goal, acts)
     (7, 10)
     """
-    # TODO
-    raise NotImplementedError
+    if goal_reached(state, goal):
+        return 0
+    layers = relaxed_layers(state, goal, actions)
+    if layers is None:
+        return float('inf')
+
+    facts, acts_by_layer = layers
+    first = {}
+    for i, layer_facts in enumerate(facts):
+        for f in layer_facts:
+            first.setdefault(f, i)
+
+    pending = [set() for _ in facts]
+    for f in goal:
+        pending[first[f]].add(f)
+
+    chosen = set()
+    for i in range(len(facts) - 1, 0, -1):
+        for f in sorted(pending[i]):
+            if any(f in a.add for a in chosen):
+                continue
+            a = min((a for a in acts_by_layer[i-1] if f in a.add), key=lambda a: len(a.pre))
+            chosen.add(a)
+        # todo: check preconditions become goals for earlier layers
+        # todo: check docstring and implement missing parts
+
+    return len(chosen)
+
 
 
 def prune_plan(problem: Problem, actions: list[Action], plan: list[str]) -> list[str]:
@@ -97,7 +122,7 @@ def prune_plan(problem: Problem, actions: list[Action], plan: list[str]) -> list
     def valid(pl):
         s = problem.init
         for name in pl:
-            a = name.get(name)
+            a = by_name.get(name)
             if a is None or not a.pre <= s:
                 return False
             s = (s - a.delete) | a.add
@@ -108,13 +133,15 @@ def prune_plan(problem: Problem, actions: list[Action], plan: list[str]) -> list
         improved = False
         singles = [[i] for i in range(len(plan))]
         # here is something missing
+        # maybe try improving more than once?
         for drop in singles:
             candidate = [a for k, a in enumerate(plan) if k not in drop]
             if valid(candidate):
-                pass
+                plan = candidate
+                improved = True
+                break
 
-    # TODO
-    raise NotImplementedError
+    return plan
 
 
 def anneal(start, neighbour, score, seconds: float = 5.0, temperature: float = 1.0, seed: int = 0):
@@ -127,6 +154,7 @@ def anneal(start, neighbour, score, seconds: float = 5.0, temperature: float = 1
     >>> best
     3
     """
+    # implementation is not complete
     x, sx = start, score(start)
     t0 = time.perf_counter()
     while True:
